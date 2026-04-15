@@ -1,0 +1,25 @@
+wing: mempalace
+rooms:
+- name: backends
+  description: Files from backends/
+  keywords:
+  - backends
+  - backends
+- name: embeddings
+  description: Files from embeddings/
+  keywords:
+  - embeddings
+  - embeddings
+- name: i18n
+  description: Files from i18n/
+  keywords:
+  - i18n
+  - i18n
+- name: instructions
+  description: Files from instructions/
+  keywords:
+  - instructions
+  - instructions
+- name: general
+  description: Files that don't fit other rooms
+  keywords: []

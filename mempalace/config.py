@@ -58,6 +58,73 @@ def sanitize_content(value: str, max_length: int = 100_000) -> str:
     return value
 
 
+def sanitize_chinese_text(text: str, method: str = "remove_surrogates") -> str:
+    """专门处理中文字符和代理字符的转换函数。
+
+    基于社区最佳实践，提供多种处理策略来解决中文字符编码问题。
+
+    Args:
+        text: 输入文本
+        method: 处理方法，可选值：
+            - "remove_surrogates": 移除代理字符（默认，最安全）
+            - "surrogateescape": 使用surrogateescape错误处理器
+            - "replace": 用替换字符替换无法编码的字符
+            - "ignore": 忽略无法编码的字符
+
+    Returns:
+        处理后的文本
+
+    Examples:
+        >>> text = "测试内容\udcad"
+        >>> sanitize_chinese_text(text, "remove_surrogates")
+        '测试内容'
+    """
+    if not isinstance(text, str):
+        return text
+
+    if method == "remove_surrogates":
+        # 移除代理字符（U+D800-U+DFFF），最安全的方法
+        # 同时也移除控制字符（U+0000-U+001F, U+007F-U+009F）
+        cleaned_chars = []
+        for char in text:
+            code = ord(char)
+            # 跳过代理字符范围
+            if 0xD800 <= code <= 0xDFFF:
+                continue
+            # 跳过控制字符
+            if (0x0000 <= code <= 0x001F) or (0x007F <= code <= 0x009F):
+                continue
+            cleaned_chars.append(char)
+        return ''.join(cleaned_chars)
+
+    elif method == "surrogateescape":
+        # 使用surrogateescape错误处理器，保留原始字节数据
+        try:
+            # 先编码为UTF-8，再解码回来
+            return text.encode('utf-8', errors='surrogateescape').decode('utf-8', errors='surrogateescape')
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            # 如果失败，回退到移除代理字符
+            return ''.join(char for char in text if not (0xD800 <= ord(char) <= 0xDFFF))
+
+    elif method == "replace":
+        # 用替换字符替换无法编码的字符
+        try:
+            return text.encode('utf-8', errors='replace').decode('utf-8')
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            return ''.join(char for char in text if not (0xD800 <= ord(char) <= 0xDFFF))
+
+    elif method == "ignore":
+        # 忽略无法编码的字符
+        try:
+            return text.encode('utf-8', errors='ignore').decode('utf-8')
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            return ''.join(char for char in text if not (0xD800 <= ord(char) <= 0xDFFF))
+
+    else:
+        # 未知方法，默认使用移除代理字符
+        return ''.join(char for char in text if not (0xD800 <= ord(char) <= 0xDFFF))
+
+
 DEFAULT_PALACE_PATH = os.path.expanduser("~/.mempalace/palace")
 DEFAULT_COLLECTION_NAME = "mempalace_drawers"
 
@@ -174,6 +241,24 @@ class MempalaceConfig:
         return self._file_config.get("hall_keywords", DEFAULT_HALL_KEYWORDS)
 
     @property
+    def embedding_provider(self) -> str:
+        """Embedding provider type: 'default' (ChromaDB ONNX) or 'ollama'."""
+        return self._file_config.get("embedding_provider", "default")
+
+    @property
+    def ollama_model(self) -> str:
+        """Ollama model name for embedding generation."""
+        return self._file_config.get("ollama_model", "qwen3-embedding")
+
+    @property
+    def ollama_base_url(self) -> str:
+        """Ollama API base URL."""
+        env_url = os.environ.get("OLLAMA_BASE_URL")
+        if env_url:
+            return env_url
+        return self._file_config.get("ollama_base_url", "http://localhost:11434")
+
+    @property
     def hook_silent_save(self):
         """Whether the stop hook saves directly (True) or blocks for MCP calls (False)."""
         return self._file_config.get("hooks", {}).get("silent_save", True)
@@ -208,6 +293,9 @@ class MempalaceConfig:
                 "collection_name": DEFAULT_COLLECTION_NAME,
                 "topic_wings": DEFAULT_TOPIC_WINGS,
                 "hall_keywords": DEFAULT_HALL_KEYWORDS,
+                "embedding_provider": "default",
+                "ollama_model": "qwen3-embedding",
+                "ollama_base_url": "http://localhost:11434",
             }
             with open(self._config_file, "w") as f:
                 json.dump(default_config, f, indent=2)

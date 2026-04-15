@@ -3,6 +3,7 @@
 import logging
 import os
 import sqlite3
+from typing import Any, Optional
 
 import chromadb
 
@@ -74,9 +75,10 @@ class ChromaCollection(BaseCollection):
 class ChromaBackend:
     """Factory for MemPalace's default ChromaDB backend."""
 
-    def __init__(self):
+    def __init__(self, embedding_function: Optional[Any] = None):
         # Per-instance client cache: palace_path -> chromadb.PersistentClient
         self._clients: dict = {}
+        self._embedding_function = embedding_function
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -124,12 +126,18 @@ class ChromaBackend:
                 pass
 
         client = self._client(palace_path)
+        # ChromaDB 1.5.x: get_collection() does NOT accept the 'metadata' kwarg.
+        # 'metadata' (e.g. hnsw:space) is only valid on collection *creation*.
+        create_kwargs: dict = {"metadata": {"hnsw:space": "cosine"}}
+        get_kwargs: dict = {}
+        if self._embedding_function is not None:
+            create_kwargs["embedding_function"] = self._embedding_function
+            get_kwargs["embedding_function"] = self._embedding_function
+
         if create:
-            collection = client.get_or_create_collection(
-                collection_name, metadata={"hnsw:space": "cosine"}
-            )
+            collection = client.get_or_create_collection(collection_name, **create_kwargs)
         else:
-            collection = client.get_collection(collection_name)
+            collection = client.get_collection(collection_name, **get_kwargs)
         return ChromaCollection(collection)
 
     def get_or_create_collection(
@@ -146,7 +154,8 @@ class ChromaBackend:
         self, palace_path: str, collection_name: str, hnsw_space: str = "cosine"
     ) -> "ChromaCollection":
         """Create (not get-or-create) *collection_name* with cosine HNSW space."""
-        collection = self._client(palace_path).create_collection(
-            collection_name, metadata={"hnsw:space": hnsw_space}
-        )
+        kwargs: dict = {"metadata": {"hnsw:space": hnsw_space}}
+        if self._embedding_function is not None:
+            kwargs["embedding_function"] = self._embedding_function
+        collection = self._client(palace_path).create_collection(collection_name, **kwargs)
         return ChromaCollection(collection)

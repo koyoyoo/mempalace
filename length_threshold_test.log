@@ -1,0 +1,142 @@
+2026-04-15 08:13:17,350 - __main__ - INFO - ================================================================================
+2026-04-15 08:13:17,351 - __main__ - INFO - Testing content length thresholds
+2026-04-15 08:13:17,351 - __main__ - INFO - ================================================================================
+2026-04-15 08:13:17,351 - __main__ - INFO - 
+--- Testing length: 100 characters ---
+2026-04-15 08:13:17,351 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer START - wing=test, room=threshold, content_len=100, source_file=test_100.txt
+2026-04-15 08:13:17,351 - mempalace_mcp - INFO - [DEBUG] Sanitizing parameters...
+2026-04-15 08:13:17,351 - mempalace_mcp - INFO - [DEBUG] Sanitization complete - wing=test, room=threshold
+2026-04-15 08:13:17,351 - mempalace_mcp - INFO - [DEBUG] Getting collection...
+2026-04-15 08:13:17,483 - mempalace_mcp - INFO - [DEBUG] Collection obtained successfully
+2026-04-15 08:13:17,484 - mempalace_mcp - INFO - [DEBUG] Generated drawer_id: drawer_test_threshold_d914da7af8f626b3be3073cc
+2026-04-15 08:13:17,484 - mempalace_mcp - INFO - [DEBUG] Writing to WAL...
+2026-04-15 08:13:17,484 - mempalace_mcp - INFO - [DEBUG] WAL write complete
+2026-04-15 08:13:17,485 - mempalace_mcp - INFO - [DEBUG] Checking for existing drawer...
+2026-04-15 08:13:17,522 - mempalace_mcp - INFO - [DEBUG] No existing drawer found
+2026-04-15 08:13:17,523 - mempalace_mcp - INFO - [DEBUG] Starting col.upsert...
+2026-04-15 08:13:17,926 - mempalace_mcp - INFO - [DEBUG] col.upsert complete
+2026-04-15 08:13:17,927 - mempalace_mcp - INFO - Filed drawer: drawer_test_threshold_d914da7af8f626b3be3073cc ¡ú test/threshold
+2026-04-15 08:13:17,927 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer SUCCESS
+2026-04-15 08:13:17,929 - __main__ - INFO -    Drawer ID: drawer_test_threshold_d914da7af8f626b3be3073cc
+2026-04-15 08:13:17,929 - __main__ - INFO - 
+--- Testing length: 500 characters ---
+2026-04-15 08:13:17,929 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer START - wing=test, room=threshold, content_len=500, source_file=test_500.txt
+2026-04-15 08:13:17,930 - mempalace_mcp - INFO - [DEBUG] Sanitizing parameters...
+2026-04-15 08:13:17,930 - mempalace_mcp - INFO - [DEBUG] Sanitization complete - wing=test, room=threshold
+2026-04-15 08:13:17,930 - mempalace_mcp - INFO - [DEBUG] Getting collection...
+2026-04-15 08:13:17,933 - mempalace_mcp - INFO - [DEBUG] Collection obtained successfully
+2026-04-15 08:13:17,933 - mempalace_mcp - INFO - [DEBUG] Generated drawer_id: drawer_test_threshold_37edb0f276aeff03111dad4e
+2026-04-15 08:13:17,933 - mempalace_mcp - INFO - [DEBUG] Writing to WAL...
+2026-04-15 08:13:17,934 - mempalace_mcp - INFO - [DEBUG] WAL write complete
+2026-04-15 08:13:17,935 - mempalace_mcp - INFO - [DEBUG] Checking for existing drawer...
+2026-04-15 08:13:17,936 - mempalace_mcp - INFO - [DEBUG] No existing drawer found
+2026-04-15 08:13:17,936 - mempalace_mcp - INFO - [DEBUG] Starting col.upsert...
+2026-04-15 08:13:18,151 - mempalace_mcp - INFO - [DEBUG] col.upsert complete
+2026-04-15 08:13:18,151 - mempalace_mcp - INFO - Filed drawer: drawer_test_threshold_37edb0f276aeff03111dad4e ¡ú test/threshold
+2026-04-15 08:13:18,152 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer SUCCESS
+2026-04-15 08:13:18,153 - __main__ - INFO -    Drawer ID: drawer_test_threshold_37edb0f276aeff03111dad4e
+2026-04-15 08:13:18,153 - __main__ - INFO - 
+--- Testing length: 1000 characters ---
+2026-04-15 08:13:18,153 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer START - wing=test, room=threshold, content_len=1000, source_file=test_1000.txt
+2026-04-15 08:13:18,153 - mempalace_mcp - INFO - [DEBUG] Sanitizing parameters...
+2026-04-15 08:13:18,153 - mempalace_mcp - INFO - [DEBUG] Sanitization complete - wing=test, room=threshold
+2026-04-15 08:13:18,153 - mempalace_mcp - INFO - [DEBUG] Getting collection...
+2026-04-15 08:13:18,157 - mempalace_mcp - INFO - [DEBUG] Collection obtained successfully
+2026-04-15 08:13:18,157 - mempalace_mcp - INFO - [DEBUG] Generated drawer_id: drawer_test_threshold_8a1ecef534259a7cbaf00f0b
+2026-04-15 08:13:18,158 - mempalace_mcp - INFO - [DEBUG] Writing to WAL...
+2026-04-15 08:13:18,158 - mempalace_mcp - INFO - [DEBUG] WAL write complete
+2026-04-15 08:13:18,159 - mempalace_mcp - INFO - [DEBUG] Checking for existing drawer...
+2026-04-15 08:13:18,160 - mempalace_mcp - INFO - [DEBUG] No existing drawer found
+2026-04-15 08:13:18,160 - mempalace_mcp - INFO - [DEBUG] Starting col.upsert...
+2026-04-15 08:13:18,360 - mempalace_mcp - INFO - [DEBUG] col.upsert complete
+2026-04-15 08:13:18,360 - mempalace_mcp - INFO - Filed drawer: drawer_test_threshold_8a1ecef534259a7cbaf00f0b ¡ú test/threshold
+2026-04-15 08:13:18,361 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer SUCCESS
+2026-04-15 08:13:18,361 - __main__ - INFO -    Drawer ID: drawer_test_threshold_8a1ecef534259a7cbaf00f0b
+2026-04-15 08:13:18,361 - __main__ - INFO - 
+--- Testing length: 2000 characters ---
+2026-04-15 08:13:18,362 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer START - wing=test, room=threshold, content_len=2000, source_file=test_2000.txt
+2026-04-15 08:13:18,362 - mempalace_mcp - INFO - [DEBUG] Sanitizing parameters...
+2026-04-15 08:13:18,362 - mempalace_mcp - INFO - [DEBUG] Sanitization complete - wing=test, room=threshold
+2026-04-15 08:13:18,362 - mempalace_mcp - INFO - [DEBUG] Getting collection...
+2026-04-15 08:13:18,366 - mempalace_mcp - INFO - [DEBUG] Collection obtained successfully
+2026-04-15 08:13:18,366 - mempalace_mcp - INFO - [DEBUG] Generated drawer_id: drawer_test_threshold_c7f32c3dc75feb3989265074
+2026-04-15 08:13:18,366 - mempalace_mcp - INFO - [DEBUG] Writing to WAL...
+2026-04-15 08:13:18,367 - mempalace_mcp - INFO - [DEBUG] WAL write complete
+2026-04-15 08:13:18,367 - mempalace_mcp - INFO - [DEBUG] Checking for existing drawer...
+2026-04-15 08:13:18,368 - mempalace_mcp - INFO - [DEBUG] No existing drawer found
+2026-04-15 08:13:18,368 - mempalace_mcp - INFO - [DEBUG] Starting col.upsert...
+2026-04-15 08:13:18,584 - mempalace_mcp - INFO - [DEBUG] col.upsert complete
+2026-04-15 08:13:18,584 - mempalace_mcp - INFO - Filed drawer: drawer_test_threshold_c7f32c3dc75feb3989265074 ¡ú test/threshold
+2026-04-15 08:13:18,585 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer SUCCESS
+2026-04-15 08:13:18,585 - __main__ - INFO -    Drawer ID: drawer_test_threshold_c7f32c3dc75feb3989265074
+2026-04-15 08:13:18,585 - __main__ - INFO - 
+--- Testing length: 3000 characters ---
+2026-04-15 08:13:18,586 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer START - wing=test, room=threshold, content_len=3000, source_file=test_3000.txt
+2026-04-15 08:13:18,586 - mempalace_mcp - INFO - [DEBUG] Sanitizing parameters...
+2026-04-15 08:13:18,586 - mempalace_mcp - INFO - [DEBUG] Sanitization complete - wing=test, room=threshold
+2026-04-15 08:13:18,586 - mempalace_mcp - INFO - [DEBUG] Getting collection...
+2026-04-15 08:13:18,590 - mempalace_mcp - INFO - [DEBUG] Collection obtained successfully
+2026-04-15 08:13:18,590 - mempalace_mcp - INFO - [DEBUG] Generated drawer_id: drawer_test_threshold_b1055b036c6de64cd89e0c1c
+2026-04-15 08:13:18,591 - mempalace_mcp - INFO - [DEBUG] Writing to WAL...
+2026-04-15 08:13:18,591 - mempalace_mcp - INFO - [DEBUG] WAL write complete
+2026-04-15 08:13:18,591 - mempalace_mcp - INFO - [DEBUG] Checking for existing drawer...
+2026-04-15 08:13:18,592 - mempalace_mcp - INFO - [DEBUG] No existing drawer found
+2026-04-15 08:13:18,592 - mempalace_mcp - INFO - [DEBUG] Starting col.upsert...
+2026-04-15 08:13:18,814 - mempalace_mcp - INFO - [DEBUG] col.upsert complete
+2026-04-15 08:13:18,815 - mempalace_mcp - INFO - Filed drawer: drawer_test_threshold_b1055b036c6de64cd89e0c1c ¡ú test/threshold
+2026-04-15 08:13:18,815 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer SUCCESS
+2026-04-15 08:13:18,816 - __main__ - INFO -    Drawer ID: drawer_test_threshold_b1055b036c6de64cd89e0c1c
+2026-04-15 08:13:18,816 - __main__ - INFO - 
+--- Testing length: 4000 characters ---
+2026-04-15 08:13:18,816 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer START - wing=test, room=threshold, content_len=4000, source_file=test_4000.txt
+2026-04-15 08:13:18,816 - mempalace_mcp - INFO - [DEBUG] Sanitizing parameters...
+2026-04-15 08:13:18,817 - mempalace_mcp - INFO - [DEBUG] Sanitization complete - wing=test, room=threshold
+2026-04-15 08:13:18,817 - mempalace_mcp - INFO - [DEBUG] Getting collection...
+2026-04-15 08:13:18,824 - mempalace_mcp - INFO - [DEBUG] Collection obtained successfully
+2026-04-15 08:13:18,824 - mempalace_mcp - INFO - [DEBUG] Generated drawer_id: drawer_test_threshold_6a740834e8c4942220f01a04
+2026-04-15 08:13:18,824 - mempalace_mcp - INFO - [DEBUG] Writing to WAL...
+2026-04-15 08:13:18,825 - mempalace_mcp - INFO - [DEBUG] WAL write complete
+2026-04-15 08:13:18,826 - mempalace_mcp - INFO - [DEBUG] Checking for existing drawer...
+2026-04-15 08:13:18,827 - mempalace_mcp - INFO - [DEBUG] No existing drawer found
+2026-04-15 08:13:18,827 - mempalace_mcp - INFO - [DEBUG] Starting col.upsert...
+2026-04-15 08:13:19,035 - mempalace_mcp - INFO - [DEBUG] col.upsert complete
+2026-04-15 08:13:19,036 - mempalace_mcp - INFO - Filed drawer: drawer_test_threshold_6a740834e8c4942220f01a04 ¡ú test/threshold
+2026-04-15 08:13:19,036 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer SUCCESS
+2026-04-15 08:13:19,037 - __main__ - INFO -    Drawer ID: drawer_test_threshold_6a740834e8c4942220f01a04
+2026-04-15 08:13:19,037 - __main__ - INFO - 
+--- Testing length: 4500 characters ---
+2026-04-15 08:13:19,037 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer START - wing=test, room=threshold, content_len=4500, source_file=test_4500.txt
+2026-04-15 08:13:19,037 - mempalace_mcp - INFO - [DEBUG] Sanitizing parameters...
+2026-04-15 08:13:19,037 - mempalace_mcp - INFO - [DEBUG] Sanitization complete - wing=test, room=threshold
+2026-04-15 08:13:19,037 - mempalace_mcp - INFO - [DEBUG] Getting collection...
+2026-04-15 08:13:19,041 - mempalace_mcp - INFO - [DEBUG] Collection obtained successfully
+2026-04-15 08:13:19,041 - mempalace_mcp - INFO - [DEBUG] Generated drawer_id: drawer_test_threshold_1448c60b7e4a772389ace60a
+2026-04-15 08:13:19,041 - mempalace_mcp - INFO - [DEBUG] Writing to WAL...
+2026-04-15 08:13:19,042 - mempalace_mcp - INFO - [DEBUG] WAL write complete
+2026-04-15 08:13:19,042 - mempalace_mcp - INFO - [DEBUG] Checking for existing drawer...
+2026-04-15 08:13:19,043 - mempalace_mcp - INFO - [DEBUG] No existing drawer found
+2026-04-15 08:13:19,043 - mempalace_mcp - INFO - [DEBUG] Starting col.upsert...
+2026-04-15 08:13:19,241 - mempalace_mcp - INFO - [DEBUG] col.upsert complete
+2026-04-15 08:13:19,241 - mempalace_mcp - INFO - Filed drawer: drawer_test_threshold_1448c60b7e4a772389ace60a ¡ú test/threshold
+2026-04-15 08:13:19,242 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer SUCCESS
+2026-04-15 08:13:19,242 - __main__ - INFO -    Drawer ID: drawer_test_threshold_1448c60b7e4a772389ace60a
+2026-04-15 08:13:19,242 - __main__ - INFO - 
+--- Testing length: 5000 characters ---
+2026-04-15 08:13:19,242 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer START - wing=test, room=threshold, content_len=5000, source_file=test_5000.txt
+2026-04-15 08:13:19,243 - mempalace_mcp - INFO - [DEBUG] Sanitizing parameters...
+2026-04-15 08:13:19,243 - mempalace_mcp - INFO - [DEBUG] Sanitization complete - wing=test, room=threshold
+2026-04-15 08:13:19,243 - mempalace_mcp - INFO - [DEBUG] Getting collection...
+2026-04-15 08:13:19,249 - mempalace_mcp - INFO - [DEBUG] Collection obtained successfully
+2026-04-15 08:13:19,249 - mempalace_mcp - INFO - [DEBUG] Generated drawer_id: drawer_test_threshold_23b6b83eece7054da0990bb0
+2026-04-15 08:13:19,249 - mempalace_mcp - INFO - [DEBUG] Writing to WAL...
+2026-04-15 08:13:19,250 - mempalace_mcp - INFO - [DEBUG] WAL write complete
+2026-04-15 08:13:19,250 - mempalace_mcp - INFO - [DEBUG] Checking for existing drawer...
+2026-04-15 08:13:19,251 - mempalace_mcp - INFO - [DEBUG] No existing drawer found
+2026-04-15 08:13:19,251 - mempalace_mcp - INFO - [DEBUG] Starting col.upsert...
+2026-04-15 08:13:19,449 - mempalace_mcp - INFO - [DEBUG] col.upsert complete
+2026-04-15 08:13:19,450 - mempalace_mcp - INFO - Filed drawer: drawer_test_threshold_23b6b83eece7054da0990bb0 ¡ú test/threshold
+2026-04-15 08:13:19,450 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer SUCCESS
+2026-04-15 08:13:19,451 - __main__ - INFO -    Drawer ID: drawer_test_threshold_23b6b83eece7054da0990bb0
+2026-04-15 08:13:19,451 - __main__ - INFO - ================================================================================
+2026-04-15 08:13:19,451 - __main__ - INFO - Threshold test completed
+2026-04-15 08:13:19,451 - __main__ - INFO - ================================================================================

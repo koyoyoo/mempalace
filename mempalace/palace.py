@@ -9,6 +9,7 @@ import hashlib
 import os
 
 from .backends.chroma import ChromaBackend
+from .config import MempalaceConfig
 
 SKIP_DIRS = {
     ".git",
@@ -36,7 +37,37 @@ SKIP_DIRS = {
     "target",
 }
 
-_DEFAULT_BACKEND = ChromaBackend()
+
+def _get_backend(palace_path: str | None = None) -> ChromaBackend:
+    """获取配置化的 ChromaBackend 实例。
+
+    根据配置决定使用默认 ONNX embedding 还是 Ollama embedding。
+    """
+    config = MempalaceConfig()
+
+    if config.embedding_provider == "ollama":
+        from .embeddings import OllamaEmbeddingFunction
+
+        ef = OllamaEmbeddingFunction(
+            model=config.ollama_model,
+            base_url=config.ollama_base_url,
+        )
+        return ChromaBackend(embedding_function=ef)
+
+    return ChromaBackend()
+
+
+# 懒加载的默认后端实例（保持向后兼容）
+_DEFAULT_BACKEND: ChromaBackend | None = None
+
+
+def _default_backend() -> ChromaBackend:
+    """获取或创建默认后端实例。"""
+    global _DEFAULT_BACKEND
+    if _DEFAULT_BACKEND is None:
+        _DEFAULT_BACKEND = _get_backend()
+    return _DEFAULT_BACKEND
+
 
 # Schema version for drawer normalization. Bump when the normalization
 # pipeline changes in a way that existing drawers should be rebuilt to pick up
@@ -55,7 +86,7 @@ def get_collection(
     create: bool = True,
 ):
     """Get the palace collection through the backend layer."""
-    return _DEFAULT_BACKEND.get_collection(
+    return _default_backend().get_collection(
         palace_path,
         collection_name=collection_name,
         create=create,
@@ -65,6 +96,12 @@ def get_collection(
 def get_closets_collection(palace_path: str, create: bool = True):
     """Get the closets collection — the searchable index layer."""
     return get_collection(palace_path, collection_name="mempalace_closets", create=create)
+
+
+def reset_backend() -> None:
+    """重置后端缓存（用于配置变更后重新加载）。"""
+    global _DEFAULT_BACKEND
+    _DEFAULT_BACKEND = None
 
 
 CLOSET_CHAR_LIMIT = 1500  # fill closet until ~1500 chars, then start a new one

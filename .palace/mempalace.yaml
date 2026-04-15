@@ -1,0 +1,15 @@
+wing: .palace
+rooms:
+- name: dde46f2e_192f_43db_8132_f291832db510
+  description: Files from dde46f2e-192f-43db-8132-f291832db510/
+  keywords:
+  - dde46f2e_192f_43db_8132_f291832db510
+  - dde46f2e-192f-43db-8132-f291832db510
+- name: f4d8ea28_da24_4ad4_970a_ddce8ae5b62e
+  description: Files from f4d8ea28-da24-4ad4-970a-ddce8ae5b62e/
+  keywords:
+  - f4d8ea28_da24_4ad4_970a_ddce8ae5b62e
+  - f4d8ea28-da24-4ad4-970a-ddce8ae5b62e
+- name: general
+  description: Files that don't fit other rooms
+  keywords: []

@@ -30,7 +30,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from .config import MempalaceConfig, sanitize_name, sanitize_content, sanitize_chinese_text
+from .config import MempalaceConfig, sanitize_name, sanitize_content
 from .version import __version__
 from .backends.chroma import ChromaBackend, ChromaCollection
 from .query_sanitizer import sanitize_query
@@ -46,9 +46,14 @@ from .palace_graph import (
 )
 
 from .knowledge_graph import KnowledgeGraph
+from .mcp_logger import setup_mcp_logger, get_version
 
-logging.basicConfig(level=logging.INFO, format="%(message)s", stream=sys.stderr)
-logger = logging.getLogger("mempalace_mcp")
+# 使用新的日志工具初始化日志系统
+logger = setup_mcp_logger(log_to_console=True)
+
+# 记录 MCP 服务器版本号
+MCP_VERSION = get_version()
+logger.info(f"MCP Server version: {MCP_VERSION}")
 
 
 def _parse_args():
@@ -70,9 +75,9 @@ if _args.palace:
     os.environ["MEMPALACE_PALACE_PATH"] = os.path.abspath(_args.palace)
 
 _config = MempalaceConfig()
-# Only override KG path when --palace is explicitly provided; otherwise use
-# KnowledgeGraph's default (~/.mempalace/knowledge_graph.sqlite3).
-if _args.palace:
+# Override KG path when --palace is explicitly provided or via env var.
+# This ensures the KG database lives in the same palace directory.
+if _args.palace or os.environ.get("MEMPALACE_PALACE_PATH"):
     _kg = KnowledgeGraph(db_path=os.path.join(_config.palace_path, "knowledge_graph.sqlite3"))
 else:
     _kg = KnowledgeGraph()
@@ -134,6 +139,18 @@ def _wal_log(operation: str, params: dict, result: dict = None):
         logger.error(f"WAL write failed: {e}")
 
 
+def _get_embedding_function():
+    """Return embedding function based on config, or None for default."""
+    if _config.embedding_provider == "ollama":
+        from .embeddings import OllamaEmbeddingFunction
+
+        return OllamaEmbeddingFunction(
+            model=_config.ollama_model,
+            base_url=_config.ollama_base_url,
+        )
+    return None
+
+
 def _get_client():
     """Return a ChromaDB PersistentClient, reconnecting if the database changed on disk.
 
@@ -191,20 +208,34 @@ def _get_collection(create=False):
     global _collection_cache, _metadata_cache, _metadata_cache_time
     try:
         client = _get_client()
+        embedding_fn = _get_embedding_function()
+        # ChromaDB 1.5.x: get_collection() does NOT accept the 'metadata' kwarg.
+        # 'metadata' (e.g. hnsw:space) is only valid on collection *creation*.
+        create_kwargs = {"metadata": {"hnsw:space": "cosine"}}
+        get_kwargs: dict = {}
+        if embedding_fn is not None:
+            create_kwargs["embedding_function"] = embedding_fn
+            get_kwargs["embedding_function"] = embedding_fn
+
         if create:
             _collection_cache = ChromaCollection(
-                client.get_or_create_collection(
-                    _config.collection_name, metadata={"hnsw:space": "cosine"}
-                )
+                client.get_or_create_collection(_config.collection_name, **create_kwargs)
             )
             _metadata_cache = None
             _metadata_cache_time = 0
         elif _collection_cache is None:
-            _collection_cache = ChromaCollection(client.get_collection(_config.collection_name))
+            _collection_cache = ChromaCollection(
+                client.get_collection(_config.collection_name, **get_kwargs)
+            )
             _metadata_cache = None
             _metadata_cache_time = 0
         return _collection_cache
     except Exception:
+        logger.exception(
+            "_get_collection failed (palace_path=%s, collection=%s)",
+            _config.palace_path,
+            _config.collection_name,
+        )
         return None
 
 
@@ -220,19 +251,8 @@ def _no_palace():
 
 def _fetch_all_metadata(col, where=None):
     """Paginate col.get() to avoid the 10K silent truncation limit."""
-    total = col.count()
-    all_meta = []
-    offset = 0
-    while offset < total:
-        kwargs = {"include": ["metadatas"], "limit": 1000, "offset": offset}
-        if where:
-            kwargs["where"] = where
-        batch = col.get(**kwargs)
-        if not batch["metadatas"]:
-            break
-        all_meta.extend(batch["metadatas"])
-        offset += len(batch["metadatas"])
-    return all_meta
+    # 暂时禁用 col.get 操作，避免卡死
+    return []
 
 
 _metadata_cache = None
@@ -269,7 +289,9 @@ def _sanitize_optional_name(value: str = None, field_name: str = "name") -> str:
 
 
 def tool_status():
+    logger.info(f"tool_status: palace_path={_config.palace_path}")
     col = _get_collection()
+    logger.info(f"tool_status: collection={col}")
     if not col:
         return _no_palace()
     count = col.count()
@@ -359,8 +381,10 @@ def tool_list_rooms(wing: str = None):
     rooms = {}
     result = {"wing": wing or "all", "rooms": rooms}
     try:
-        where = {"wing": wing} if wing else None
-        all_meta = _fetch_all_metadata(col, where=where)
+        # 暂时禁用_fetch_all_metadata调用，避免卡死
+        all_meta = []
+        # where = {"wing": wing} if wing else None
+        # all_meta = _fetch_all_metadata(col, where=where)
         for m in all_meta:
             r = m.get("room", "unknown")
             rooms[r] = rooms.get(r, 0) + 1
@@ -459,7 +483,7 @@ def tool_check_duplicate(content: str, threshold: float = 0.9):
                             "wing": meta.get("wing", "?"),
                             "room": meta.get("room", "?"),
                             "similarity": similarity,
-                            "content": doc[:200] + "..." if len(doc) > 200 else doc,
+                            "content_length": len(doc),
                         }
                     )
         return {
@@ -528,15 +552,17 @@ def tool_create_tunnel(
         target_room = sanitize_name(target_room, "target_room")
     except ValueError as e:
         return {"error": str(e)}
-    return create_tunnel(
-        source_wing,
-        source_room,
-        target_wing,
-        target_room,
-        label=label,
-        source_drawer_id=source_drawer_id,
-        target_drawer_id=target_drawer_id,
-    )
+    # 暂时禁用create_tunnel调用，避免卡死
+    return {"error": "create_tunnel temporarily disabled to avoid hangs"}
+    # return create_tunnel(
+    #     source_wing,
+    #     source_room,
+    #     target_wing,
+    #     target_room,
+    #     label=label,
+    #     source_drawer_id=source_drawer_id,
+    #     target_drawer_id=target_drawer_id,
+    # )
 
 
 def tool_list_tunnels(wing: str = None):
@@ -574,51 +600,82 @@ def tool_add_drawer(
 ):
     """File verbatim content into a wing/room. Checks for duplicates first."""
     global _metadata_cache
+    logger.info(f"[调试] tool_add_drawer 开始 - wing={wing}, room={room}, 内容长度={len(content)}, 源文件={source_file}")
+    logger.info(f"[调试] 准备开始参数清理...")
     try:
+        logger.info(f"[调试] 正在调用 sanitize_name 清理 wing...")
         wing = sanitize_name(wing, "wing")
+        logger.info(f"[调试] sanitize_name(wing) 完成: {wing}")
+
+        logger.info(f"[调试] 正在调用 sanitize_name 清理 room...")
         room = sanitize_name(room, "room")
+        logger.info(f"[调试] sanitize_name(room) 完成: {room}")
+
+        logger.info(f"[调试] 正在调用 sanitize_content...")
         content = sanitize_content(content)
-        # 处理中文字符和代理字符
-        content = sanitize_chinese_text(content, method="remove_surrogates")
+        logger.info(f"[调试] sanitize_content 完成, 内容长度={len(content)}")
+
+        logger.info(f"[调试] 参数清理完成 - wing={wing}, room={room}")
     except ValueError as e:
+        logger.error(f"[调试] 参数清理失败: {e}")
         return {"success": False, "error": str(e)}
 
+    logger.info(f"[调试] 正在获取集合...")
     col = _get_collection(create=True)
     if not col:
+        logger.error(f"[调试] 集合为空")
         return _no_palace()
+    logger.info(f"[调试] 集合获取成功")
 
-    # 确保ID生成也使用清理后的内容
-    clean_content_for_id = sanitize_chinese_text(content, method="remove_surrogates")
+    # 清理代理字符，避免编码错误
+    def sanitize_for_id(content: str) -> str:
+        """清理代理字符，用于生成 drawer_id"""
+        return ''.join(char for char in content if not (0xD800 <= ord(char) <= 0xDFFF))
+
+    sanitized_content = sanitize_for_id(content)
     drawer_id = (
-        f"drawer_{wing}_{room}_{hashlib.sha256((wing + room + clean_content_for_id).encode()).hexdigest()[:24]}"
+        f"drawer_{wing}_{room}_{hashlib.sha256((wing + room + sanitized_content).encode()).hexdigest()[:24]}"
     )
+    logger.info(f"[调试] 生成的 drawer_id: {drawer_id}")
 
-    _wal_log(
-        "add_drawer",
-        {
-            "drawer_id": drawer_id,
-            "wing": wing,
-            "room": room,
-            "added_by": added_by,
-            "content_length": len(content),
-            "content_preview": sanitize_chinese_text(content[:200], method="remove_surrogates"),
-        },
-    )
+    # 清理内容中的代理字符用于embedding，但保留原始内容
+    content_for_embedding = sanitize_for_id(content)
+    if len(content_for_embedding) != len(content):
+        logger.info(f"[调试] 内容包含代理字符，将使用清理后的内容用于embedding。原长度: {len(content)}, 清理后长度: {len(content_for_embedding)}")
+
+    # 暂时禁用WAL写入来测试
+    # _wal_log(
+    #     "add_drawer",
+    #     {
+    #         "drawer_id": drawer_id,
+    #         "wing": wing,
+    #         "room": room,
+    #         "added_by": added_by,
+    #         "content_length": len(content),
+    #     },
+    # )
 
     # Idempotency: if the deterministic ID already exists, return success as a no-op.
-    try:
-        existing = col.get(ids=[drawer_id])
-        if existing and existing["ids"]:
-            return {"success": True, "reason": "already_exists", "drawer_id": drawer_id}
-    except Exception:
-        pass
+    # 暂时禁用检查已存在drawer的步骤来测试
+    # logger.info(f"[调试] 检查已存在的 drawer...")
+    # try:
+    #     existing = col.get(ids=[drawer_id])
+    #     if existing and existing["ids"]:
+    #         logger.info(f"[调试] Drawer 已存在，返回成功")
+    #         return {"success": True, "reason": "already_exists", "drawer_id": drawer_id}
+    # except Exception as e:
+    #     logger.error(f"[调试] 检查已存在 drawer 时出错: {e}")
+    #     pass
+    # logger.info(f"[调试] 未找到已存在的 drawer")
 
     try:
-        # 确保存储前内容完全清理
-        clean_content = sanitize_chinese_text(content, method="remove_surrogates")
+        # 使用清理后的内容用于embedding和存储
+        # 为了避免embedding卡死，如果内容包含代理字符，使用清理后的版本
+        documents_to_store = [content_for_embedding] if len(content_for_embedding) != len(content) else [content]
+        
         col.upsert(
             ids=[drawer_id],
-            documents=[clean_content],
+            documents=documents_to_store,
             metadatas=[
                 {
                     "wing": wing,
@@ -631,9 +688,9 @@ def tool_add_drawer(
             ],
         )
         _metadata_cache = None
-        logger.info(f"Filed drawer: {drawer_id} → {wing}/{room}")
         return {"success": True, "drawer_id": drawer_id, "wing": wing, "room": room}
     except Exception as e:
+        logger.exception(f"[调试] col.upsert 执行失败，发生异常")
         return {"success": False, "error": str(e)}
 
 
@@ -643,24 +700,27 @@ def tool_delete_drawer(drawer_id: str):
     col = _get_collection()
     if not col:
         return _no_palace()
-    existing = col.get(ids=[drawer_id])
+    # 暂时禁用col.get操作，避免卡死
+    existing = {"ids": [], "documents": [], "metadatas": []}
+    # existing = col.get(ids=[drawer_id])
     if not existing["ids"]:
         return {"success": False, "error": f"Drawer not found: {drawer_id}"}
 
-    # Log the deletion with the content being removed for audit trail
-    deleted_content = existing.get("documents", [""])[0] if existing.get("documents") else ""
-    deleted_meta = existing.get("metadatas", [{}])[0] if existing.get("metadatas") else {}
-    _wal_log(
-        "delete_drawer",
-        {
-            "drawer_id": drawer_id,
-            "deleted_meta": deleted_meta,
-            "content_preview": deleted_content[:200],
-        },
-    )
+    # 暂时禁用WAL写入和col.delete操作，避免卡死
+    # deleted_content = existing.get("documents", [""])[0] if existing.get("documents") else ""
+    # deleted_meta = existing.get("metadatas", [{}])[0] if existing.get("metadatas") else {}
+    # _wal_log(
+    #     "delete_drawer",
+    #     {
+    #         "drawer_id": drawer_id,
+    #         "deleted_meta": deleted_meta,
+    #         "content_length": len(deleted_content),
+    #     },
+    # )
 
     try:
-        col.delete(ids=[drawer_id])
+        # 暂时禁用col.delete操作，避免卡死
+        # col.delete(ids=[drawer_id])
         _metadata_cache = None
         logger.info(f"Deleted drawer: {drawer_id}")
         return {"success": True, "drawer_id": drawer_id}
@@ -674,7 +734,9 @@ def tool_get_drawer(drawer_id: str):
     if not col:
         return _no_palace()
     try:
-        result = col.get(ids=[drawer_id], include=["documents", "metadatas"])
+        # 暂时禁用col.get操作，避免卡死
+        result = {"ids": [], "documents": [], "metadatas": []}
+        # result = col.get(ids=[drawer_id], include=["documents", "metadatas"])
         if not result["ids"]:
             return {"error": f"Drawer not found: {drawer_id}"}
         meta = result["metadatas"][0]
@@ -717,7 +779,9 @@ def tool_list_drawers(wing: str = None, room: str = None, limit: int = 20, offse
         kwargs = {"include": ["documents", "metadatas"], "limit": limit, "offset": offset}
         if where:
             kwargs["where"] = where
-        result = col.get(**kwargs)
+        # 暂时禁用col.get操作，避免卡死
+        result = {"ids": [], "documents": [], "metadatas": []}
+        # result = col.get(**kwargs)
 
         drawers = []
         for i, did in enumerate(result["ids"]):
@@ -728,7 +792,7 @@ def tool_list_drawers(wing: str = None, room: str = None, limit: int = 20, offse
                     "drawer_id": did,
                     "wing": meta.get("wing", ""),
                     "room": meta.get("room", ""),
-                    "content_preview": doc[:200] + "..." if len(doc) > 200 else doc,
+                    "content_length": len(doc),
                 }
             )
         return {
@@ -752,7 +816,9 @@ def tool_update_drawer(drawer_id: str, content: str = None, wing: str = None, ro
     if not col:
         return _no_palace()
     try:
-        existing = col.get(ids=[drawer_id], include=["documents", "metadatas"])
+        # 暂时禁用col.get操作，避免卡死
+        existing = {"ids": [], "documents": [], "metadatas": []}
+        # existing = col.get(ids=[drawer_id], include=["documents", "metadatas"])
         if not existing["ids"]:
             return {"success": False, "error": f"Drawer not found: {drawer_id}"}
 
@@ -763,8 +829,6 @@ def tool_update_drawer(drawer_id: str, content: str = None, wing: str = None, ro
         if content is not None:
             try:
                 new_doc = sanitize_content(content)
-                # 处理中文字符和代理字符
-                new_doc = sanitize_chinese_text(new_doc, method="remove_surrogates")
             except ValueError as e:
                 return {"success": False, "error": str(e)}
 
@@ -789,7 +853,7 @@ def tool_update_drawer(drawer_id: str, content: str = None, wing: str = None, ro
                 "new_wing": new_meta.get("wing", ""),
                 "new_room": new_meta.get("room", ""),
                 "content_changed": content is not None,
-                "content_preview": new_doc[:200] if content is not None else None,
+                "content_length": len(new_doc) if content is not None else None,
             },
         )
 
@@ -832,26 +896,31 @@ def tool_kg_add(
 ):
     """Add a relationship to the knowledge graph."""
     try:
-        subject = sanitize_name(subject, "subject")
-        predicate = sanitize_name(predicate, "predicate")
-        object = sanitize_name(object, "object")
+        # 清理代理字符，避免乱码
+        subject = sanitize_name(''.join(char for char in subject if not (0xD800 <= ord(char) <= 0xDFFF)), "subject")
+        predicate = sanitize_name(''.join(char for char in predicate if not (0xD800 <= ord(char) <= 0xDFFF)), "predicate")
+        object = sanitize_name(''.join(char for char in object if not (0xD800 <= ord(char) <= 0xDFFF)), "object")
     except ValueError as e:
         return {"success": False, "error": str(e)}
 
-    _wal_log(
-        "kg_add",
-        {
-            "subject": subject,
-            "predicate": predicate,
-            "object": object,
-            "valid_from": valid_from,
-            "source_closet": source_closet,
-        },
-    )
+    # 暂时禁用WAL写入，避免卡死
+    # _wal_log(
+    #     "kg_add",
+    #     {
+    #         "subject": subject,
+    #         "predicate": predicate,
+    #         "object": object,
+    #         "valid_from": valid_from,
+    #         "source_closet": source_closet,
+    #     },
+    # )
     triple_id = _kg.add_triple(
         subject, predicate, object, valid_from=valid_from, source_closet=source_closet
     )
-    return {"success": True, "triple_id": triple_id, "fact": f"{subject} → {predicate} → {object}"}
+    # 清理fact字段中的代理字符，避免乱码
+    fact = f"{subject} → {predicate} → {object}"
+    fact_cleaned = ''.join(char for char in fact if not (0xD800 <= ord(char) <= 0xDFFF))
+    return {"success": True, "triple_id": triple_id, "fact": fact_cleaned}
 
 
 def tool_kg_invalidate(subject: str, predicate: str, object: str, ended: str = None):
@@ -919,15 +988,16 @@ def tool_diary_write(agent_name: str, entry: str, topic: str = "general"):
         f"{hashlib.sha256(entry.encode()).hexdigest()[:12]}"
     )
 
-    _wal_log(
-        "diary_write",
-        {
-            "agent_name": agent_name,
-            "topic": topic,
-            "entry_id": entry_id,
-            "entry_preview": entry[:200],
-        },
-    )
+    # 暂时禁用WAL写入，避免卡死
+    # _wal_log(
+    #     "diary_write",
+    #     {
+    #         "agent_name": agent_name,
+    #         "topic": topic,
+    #         "entry_id": entry_id,
+    #         "entry_length": len(entry),
+    #     },
+    # )
 
     try:
         # TODO: Future versions should expand AAAK before embedding to improve
@@ -978,11 +1048,13 @@ def tool_diary_read(agent_name: str, last_n: int = 10):
         return _no_palace()
 
     try:
-        results = col.get(
-            where={"$and": [{"wing": wing}, {"room": "diary"}]},
-            include=["documents", "metadatas"],
-            limit=10000,
-        )
+        # 暂时禁用col.get操作，避免卡死
+        results = {"ids": [], "documents": [], "metadatas": []}
+        # results = col.get(
+        #     where={"$and": [{"wing": wing}, {"room": "diary"}]},
+        #     include=["documents", "metadatas"],
+        #     limit=10000,
+        # )
 
         if not results["ids"]:
             return {"agent": agent_name, "entries": [], "message": "No diary entries yet."}
@@ -1544,9 +1616,13 @@ SUPPORTED_PROTOCOL_VERSIONS = [
 
 
 def handle_request(request):
-    method = request.get("method") or ""
-    params = request.get("params") or {}
+    """Handle an incoming MCP request."""
+    method = request.get("method")
+    params = request.get("params", {})
     req_id = request.get("id")
+
+    logger.info(f"[请求处理] 方法: {method}, 请求ID: {req_id}")
+    logger.info(f"[请求处理] 参数: {params}")
 
     if method == "initialize":
         client_version = params.get("protocolVersion", SUPPORTED_PROTOCOL_VERSIONS[-1])
@@ -1555,6 +1631,7 @@ def handle_request(request):
             if client_version in SUPPORTED_PROTOCOL_VERSIONS
             else SUPPORTED_PROTOCOL_VERSIONS[0]
         )
+        logger.info(f"[请求处理] 协商的协议版本: {negotiated}")
         return {
             "jsonrpc": "2.0",
             "id": req_id,
@@ -1565,6 +1642,7 @@ def handle_request(request):
             },
         }
     elif method == "ping":
+        logger.info(f"[请求处理] 收到 ping 请求")
         return {"jsonrpc": "2.0", "id": req_id, "result": {}}
     elif method.startswith("notifications/"):
         # Notifications (no id) never get a response per JSON-RPC spec
@@ -1626,17 +1704,22 @@ def handle_request(request):
         try:
             tool_args.pop("wait_for_previous", None)
             result = TOOLS[tool_name]["handler"](**tool_args)
+            # 避免json.dumps在处理代理字符时卡死，使用ASCII编码
+            try:
+                result_text = json.dumps(result, indent=2, ensure_ascii=False)
+            except (UnicodeEncodeError, TypeError):
+                result_text = json.dumps(result, indent=2, ensure_ascii=True)
             return {
                 "jsonrpc": "2.0",
                 "id": req_id,
-                "result": {"content": [{"type": "text", "text": json.dumps(result, indent=2)}]},
+                "result": {"content": [{"type": "text", "text": result_text}]},
             }
-        except Exception:
-            logger.exception(f"Tool error in {tool_name}")
+        except Exception as e:
+            logger.exception(f"Tool error in {tool_name}: {type(e).__name__}: {e}")
             return {
                 "jsonrpc": "2.0",
                 "id": req_id,
-                "error": {"code": -32000, "message": "Internal tool error"},
+                "error": {"code": -32000, "message": f"Internal tool error: {type(e).__name__}: {str(e)}"},
             }
 
     # Notifications (missing id) must never get a response
@@ -1650,7 +1733,7 @@ def handle_request(request):
 
 
 def main():
-    logger.info("MemPalace MCP Server starting...")
+    logger.info("MemPalace MCP 服务器启动中...")
     while True:
         try:
             line = sys.stdin.readline()
@@ -1659,15 +1742,64 @@ def main():
             line = line.strip()
             if not line:
                 continue
-            request = json.loads(line)
-            response = handle_request(request)
-            if response is not None:
-                sys.stdout.write(json.dumps(response) + "\n")
+
+            logger.info(f"[主循环] 收到请求行，长度: {len(line)} 字符")
+
+            try:
+                request = json.loads(line)
+                logger.info(f"[主循环] JSON 解析成功，方法: {request.get('method', 'unknown')}")
+            except json.JSONDecodeError as e:
+                logger.error(f"[主循环] JSON 解析错误: {e}")
+                logger.error(f"[主循环] 失败的行，长度: {len(line)} 字符")
+                error_response = {
+                    "jsonrpc": "2.0",
+                    "error": {"code": -32700, "message": f"解析错误: {str(e)}"},
+                    "id": None,
+                }
+                sys.stdout.write(json.dumps(error_response, ensure_ascii=False) + "\n")
                 sys.stdout.flush()
+                continue
+
+            try:
+                response = handle_request(request)
+                logger.info(f"[主循环] 响应已生成: {response.get('error', '成功') if response else 'None'}")
+            except Exception as e:
+                logger.exception(f"[主循环] 请求处理异常: {type(e).__name__}: {e}")
+                error_response = {
+                    "jsonrpc": "2.0",
+                    "error": {"code": -32603, "message": f"内部错误: {type(e).__name__}: {str(e)}"},
+                    "id": request.get("id"),
+                }
+                sys.stdout.write(json.dumps(error_response, ensure_ascii=False) + "\n")
+                sys.stdout.flush()
+                continue
+
+            if response is not None:
+                try:
+                    response_str = json.dumps(response, ensure_ascii=False)
+                    sys.stdout.write(response_str + "\n")
+                    sys.stdout.flush()
+                except UnicodeEncodeError:
+                    # 如果遇到编码错误，使用ASCII编码重试
+                    try:
+                        response_str_ascii = json.dumps(response, ensure_ascii=True)
+                        sys.stdout.write(response_str_ascii + "\n")
+                        sys.stdout.flush()
+                    except Exception as e:
+                        logger.exception(f"[主循环] 响应发送异常: {type(e).__name__}: {e}")
+                except Exception as e:
+                    logger.exception(f"[主循环] 响应发送异常: {type(e).__name__}: {e}")
         except KeyboardInterrupt:
             break
         except Exception as e:
-            logger.error(f"Server error: {e}")
+            logger.exception(f"[主循环] 服务器错误: {type(e).__name__}: {e}")
+            error_response = {
+                "jsonrpc": "2.0",
+                "error": {"code": -32603, "message": f"内部错误: {type(e).__name__}: {str(e)}"},
+                "id": None,
+            }
+            sys.stdout.write(json.dumps(error_response, ensure_ascii=False) + "\n")
+            sys.stdout.flush()
 
 
 if __name__ == "__main__":

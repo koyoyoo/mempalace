@@ -1,0 +1,71 @@
+﻿python : 2026-04-15 07:42:01,676 - __main__ - INFO - =========================================================
+=======================
+所在位置 行:1 字符: 1
++ python test_mcp_debug.py 2>&1 | Out-File -Encoding utf8 mcp_debug_utf ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-04-15 07:4...===============:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-04-15 07:42:01,677 - __main__ - INFO - TEST 1: Short content
+2026-04-15 07:42:01,677 - __main__ - INFO - ==================================================================
+==============
+2026-04-15 07:42:01,677 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer START - wing=mempalace, room=document
+ation, content_len=18, source_file=None
+2026-04-15 07:42:01,677 - mempalace_mcp - INFO - [DEBUG] Sanitizing parameters...
+2026-04-15 07:42:01,677 - mempalace_mcp - INFO - [DEBUG] Sanitization complete - wing=mempalace, room=document
+ation
+2026-04-15 07:42:01,677 - mempalace_mcp - INFO - [DEBUG] Getting collection...
+2026-04-15 07:42:01,835 - mempalace_mcp - INFO - [DEBUG] Collection obtained successfully
+2026-04-15 07:42:01,835 - mempalace_mcp - INFO - [DEBUG] Generated drawer_id: drawer_mempalace_documentation_4
+686c64c4fe2f74db357ef29
+2026-04-15 07:42:01,835 - mempalace_mcp - INFO - [DEBUG] Writing to WAL...
+2026-04-15 07:42:01,836 - mempalace_mcp - INFO - [DEBUG] WAL write complete
+2026-04-15 07:42:01,836 - mempalace_mcp - INFO - [DEBUG] Checking for existing drawer...
+2026-04-15 07:42:01,870 - mempalace_mcp - INFO - [DEBUG] Drawer already exists, returning success
+2026-04-15 07:42:01,870 - __main__ - INFO - Result: {'success': True, 'reason': 'already_exists', 'drawer_id':
+ 'drawer_mempalace_documentation_4686c64c4fe2f74db357ef29'}
+2026-04-15 07:42:01,870 - __main__ - INFO - ==================================================================
+==============
+2026-04-15 07:42:01,870 - __main__ - INFO - TEST 2: Medium content
+2026-04-15 07:42:01,870 - __main__ - INFO - ==================================================================
+==============
+2026-04-15 07:42:01,870 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer START - wing=mempalace, room=document
+ation, content_len=223, source_file=None
+2026-04-15 07:42:01,870 - mempalace_mcp - INFO - [DEBUG] Sanitizing parameters...
+2026-04-15 07:42:01,870 - mempalace_mcp - INFO - [DEBUG] Sanitization complete - wing=mempalace, room=document
+ation
+2026-04-15 07:42:01,870 - mempalace_mcp - INFO - [DEBUG] Getting collection...
+2026-04-15 07:42:01,876 - mempalace_mcp - INFO - [DEBUG] Collection obtained successfully
+2026-04-15 07:42:01,876 - mempalace_mcp - INFO - [DEBUG] Generated drawer_id: drawer_mempalace_documentation_3
+9b562c92a92ccdaa759d602
+2026-04-15 07:42:01,876 - mempalace_mcp - INFO - [DEBUG] Writing to WAL...
+2026-04-15 07:42:01,876 - mempalace_mcp - INFO - [DEBUG] WAL write complete
+2026-04-15 07:42:01,876 - mempalace_mcp - INFO - [DEBUG] Checking for existing drawer...
+2026-04-15 07:42:01,877 - mempalace_mcp - INFO - [DEBUG] Drawer already exists, returning success
+2026-04-15 07:42:01,877 - __main__ - INFO - Result: {'success': True, 'reason': 'already_exists', 'drawer_id':
+ 'drawer_mempalace_documentation_39b562c92a92ccdaa759d602'}
+2026-04-15 07:42:01,877 - __main__ - INFO - ==================================================================
+==============
+2026-04-15 07:42:01,877 - __main__ - INFO - TEST 3: Long content (full document)
+2026-04-15 07:42:01,877 - __main__ - INFO - ==================================================================
+==============
+2026-04-15 07:42:01,877 - mempalace_mcp - INFO - [DEBUG] tool_add_drawer START - wing=mempalace, room=document
+ation, content_len=4507, source_file=docs/CLOSETS.md
+2026-04-15 07:42:01,877 - mempalace_mcp - INFO - [DEBUG] Sanitizing parameters...
+2026-04-15 07:42:01,878 - mempalace_mcp - INFO - [DEBUG] Sanitization complete - wing=mempalace, room=document
+ation
+2026-04-15 07:42:01,878 - mempalace_mcp - INFO - [DEBUG] Getting collection...
+2026-04-15 07:42:01,878 - mempalace_mcp - INFO - [DEBUG] Collection obtained successfully
+2026-04-15 07:42:01,879 - mempalace_mcp - INFO - [DEBUG] Generated drawer_id: drawer_mempalace_documentation_9
+014edfcf02755a9e1ed87bc
+2026-04-15 07:42:01,879 - mempalace_mcp - INFO - [DEBUG] Writing to WAL...
+2026-04-15 07:42:01,879 - mempalace_mcp - INFO - [DEBUG] WAL write complete
+2026-04-15 07:42:01,879 - mempalace_mcp - INFO - [DEBUG] Checking for existing drawer...
+2026-04-15 07:42:01,880 - mempalace_mcp - INFO - [DEBUG] Drawer already exists, returning success
+2026-04-15 07:42:01,880 - __main__ - INFO - Result: {'success': True, 'reason': 'already_exists', 'drawer_id':
+ 'drawer_mempalace_documentation_9014edfcf02755a9e1ed87bc'}
+2026-04-15 07:42:01,880 - __main__ - INFO - ==================================================================
+==============
+2026-04-15 07:42:01,880 - __main__ - INFO - All tests completed
+2026-04-15 07:42:01,880 - __main__ - INFO - ==================================================================
+==============
